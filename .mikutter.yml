@@ -1,0 +1,9 @@
+---
+slug: :crypto
+depends:
+  mikutter: 3.0.3
+  plugin: []
+version: '1.0'
+author: 
+name: crypto
+description: "狂人の base64 とか gzip でエンコードされたツイートを読める"
