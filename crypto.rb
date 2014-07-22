@@ -4,25 +4,55 @@ require 'base64'
 require 'zlib'
 
 Plugin.create(:crypto) do
-  zstream = Zlib::Inflate.new(Zlib::MAX_WBITS + 32)
+  def auto_decrypt(message)
+    zstream = Zlib::Inflate.new(Zlib::MAX_WBITS + 32)
 
-  command(:crypto_decode_base64,
-          name: "base64 としてデコード",
+    begin
+      result = Base64.strict_decode64(message.chomp)
+
+      return auto_decrypt(result)
+    rescue => e
+      p e
+    end
+    
+    begin
+      result = zstream.inflate(message)
+
+      return auto_decrypt(result)
+    rescue => e
+      p e
+    end
+
+    return message
+  end
+
+  command(:crypto_auto_decode,
+          name: "自動でデコードする",
           condition: Plugin::Command[:HasMessage],
           visible: true,
           role: :timeline) do |target|
             target.messages.each do |message|
-              activity :system, message.to_s =~ /[A-Za-z0-9=]+/ ? Base64.decode64(message.to_s) : "Base64じゃないっぽい"
+              activity :crypto, auto_decrypt(message.to_s)
             end
           end
 
-  command(:crypto_uncompress_gzip,
-          name: "base64 デコード + gzip 展開",
+  command(:crypto_rot13,
+          name: "ROT13",
           condition: Plugin::Command[:HasMessage],
           visible: true,
           role: :timeline) do |target|
             target.messages.each do |message|
-              activity :system, message.to_s =~ /[A-Za-z0-9=]+/ ? zstream.inflate(Base64.decode64(message.to_s)) : "Base64じゃないっぽい"
+              activity :crypto, message.to_s.tr("A-Za-z", "N-ZA-Mn-za-m") 
+            end
+          end
+
+  command(:crypto_rot47,
+          name: "ROT47",
+          condition: Plugin::Command[:HasMessage],
+          visible: true,
+          role: :timeline) do |target|
+            target.messages.each do |message|
+              activity :crypto, message.to_s.tr("\x21-\x7e", "\x50-\x7e\x21-\x4f")
             end
           end
 end
